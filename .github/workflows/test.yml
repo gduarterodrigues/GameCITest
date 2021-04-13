@@ -1,0 +1,272 @@
+name: Test
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "**/Dockerfile"
+      - ".github/workflows/test.yml"
+      - "reference-project-test/**"
+  pull_request:
+    paths:
+      - "**/Dockerfile"
+      - ".github/workflows/test.yml"
+      - "reference-project-test/**"
+
+env:
+  UNITY_LICENSE: "<?xml version=\"1.0\" encoding=\"UTF-8\"?><root>\n    <License id=\"Terms\">\n        <MachineBindings>\n            <Binding Key=\"1\" Value=\"576562626572264761624c65526f7578\"/>\n            <Binding Key=\"2\" Value=\"576562626572264761624c65526f7578\"/>\n        </MachineBindings>\n        <MachineID Value=\"D7nTUnjNAmtsUMcnoyrqkgIbYdM=\"/>\n        <SerialHash Value=\"2033b8ac3e6faa3742ca9f0bfae44d18f2a96b80\"/>\n        <Features>\n            <Feature Value=\"33\"/>\n            <Feature Value=\"1\"/>\n            <Feature Value=\"12\"/>\n            <Feature Value=\"2\"/>\n            <Feature Value=\"24\"/>\n            <Feature Value=\"3\"/>\n            <Feature Value=\"36\"/>\n            <Feature Value=\"17\"/>\n            <Feature Value=\"19\"/>\n            <Feature Value=\"62\"/>\n        </Features>\n        <DeveloperData Value=\"AQAAAEY0LUJHUlgtWEQ0RS1aQ1dWLUM1SlctR0RIQg==\"/>\n        <SerialMasked Value=\"F4-BGRX-XD4E-ZCWV-C5JW-XXXX\"/>\n        <StartDate Value=\"2021-02-08T00:00:00\"/>\n        <UpdateDate Value=\"2021-02-09T00:34:57\"/>\n        <InitialActivationDate Value=\"2021-02-08T00:34:56\"/>\n        <LicenseVersion Value=\"6.x\"/>\n        <ClientProvidedVersion Value=\"2018.4.30f1\"/>\n        <AlwaysOnline Value=\"false\"/>\n        <Entitlements>\n            <Entitlement Ns=\"unity_editor\" Tag=\"UnityPersonal\" Type=\"EDITOR\" ValidTo=\"9999-12-31T00:00:00\"/>\n            <Entitlement Ns=\"unity_editor\" Tag=\"DarkSkin\" Type=\"EDITOR_FEATURE\" ValidTo=\"9999-12-31T00:00:00\"/>\n        </Entitlements>\n    </License>\n<Signature xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><SignedInfo><CanonicalizationMethod Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments\"/><SignatureMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#rsa-sha1\"/><Reference URI=\"#Terms\"><Transforms><Transform Algorithm=\"http://www.w3.org/2000/09/xmldsig#enveloped-signature\"/></Transforms><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\"/><DigestValue>m0Db8UK+ktnOLJBtHybkfetpcKo=</DigestValue></Reference></SignedInfo><SignatureValue>o/pUbSQAukz7+ZYAWhnA0AJbIlyyCPL7bKVEM2lVqbrXt7cyey+umkCXamuOgsWPVUKBMkXtMH8L\n5etLmD0getWIhTGhzOnDCk+gtIPfL4jMo9tkEuOCROQAXCci23VFscKcrkB+3X6h4wEOtA2APhOY\nB+wvC794o8/82ffjP79aVAi57rp3Wmzx+9pe9yMwoJuljAy2sc2tIMgdQGWVmOGBpQm3JqsidyzI\nJWG2kjnc7pDXK9pwYzXoKiqUqqrut90d+kQqRyv7MSZXR50HFqD/LI69h68b7P8Bjo3bPXOhNXGR\n9YCoemH6EkfCJxp2gIjzjWW+l2Hj2EsFQi8YXw==</SignatureValue></Signature></root>"
+
+jobs:
+  ###########################
+  #    Build base and hub   #
+  ###########################
+  base-and-hub:
+    name: Base and hub
+    runs-on: ubuntu-18.04
+    outputs:
+      versions: ${{ steps.setup.outputs.versions }}
+      excludes: ${{ steps.setup.outputs.excludes }}
+    steps:
+      ###########################
+      #          Setup          #
+      ###########################
+      - uses: actions/checkout@v2
+      - uses: docker/setup-qemu-action@v1
+      - uses: docker/setup-buildx-action@v1
+        with:
+          driver: docker
+
+      ###########################
+      #   Build base and hub    #
+      ###########################
+      - name: Build base
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: base/Dockerfile
+          tags: base:dev
+      - name: Build hub
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: hub/Dockerfile
+          build-args: baseImage=base:dev
+          tags: hub:dev
+
+      ###########################
+      #   Save images for next  #
+      ###########################
+      - name: Save images for next
+        run: |
+          docker images
+          docker save -o base-and-hub.tar base:dev hub:dev
+      - uses: actions/upload-artifact@v2
+        with:
+          path: base-and-hub.tar
+          retention-days: 1
+
+      ###########################
+      #    Setup build matrix   #
+      ###########################
+      - name: "Setup build matrix"
+        id: setup
+        run: |
+          # Get the Unity versions for test. (The latest patch versions for each minor version.)
+          VERSIONS=`npx unity-changeset list --versions --latest-patch --json --min 2018.3`
+          echo "Versions: $VERSIONS"
+          echo "::set-output name=versions::$VERSIONS"
+
+          # Exclude linux-il2cpp for Unity 2019.2 or earlier
+          EXCLUDES="$EXCLUDES `echo \"$VERSIONS\" | jq -c '[ .[] | select(test(\"2018|2019.1|2019.2\")) | { version: ., module: \"linux-il2cpp\"} ]'`"
+
+          EXCLUDES=`echo "$EXCLUDES" | jq -s -c 'flatten'`
+          echo "Excludes: $EXCLUDES"
+          echo "::set-output name=excludes::$EXCLUDES"
+
+  ###########################
+  #  Build editor and test  #
+  ###########################
+  editor:
+    needs: base-and-hub
+    name: Editor (${{ matrix.version }}, ${{ matrix.module }})
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # The latest patch versions for each minor version.
+        version: ${{ fromJson(needs.base-and-hub.outputs.versions) }}
+        module:
+          - base
+          - linux-il2cpp
+          - windows-mono
+          - mac-mono
+          - ios
+          - android
+          - webgl
+        include:
+          - module: base
+            platform: StandaloneLinux64
+          - module: linux-il2cpp
+            platform: StandaloneLinux64
+          - module: windows-mono
+            platform: StandaloneWindows
+          - module: mac-mono
+            platform: StandaloneOSX
+          - module: ios
+            platform: iOS
+          - module: android
+            platform: Android
+          - module: webgl
+            platform: WebGL
+        exclude: ${{ fromJson(needs.base-and-hub.outputs.excludes) }}
+
+    steps:
+      ###########################
+      #          Setup          #
+      ###########################
+      - uses: actions/checkout@v2
+      - uses: docker/setup-qemu-action@v1
+      - uses: docker/setup-buildx-action@v1
+        with:
+          driver: docker
+      - name: Free disk space
+        run: .github/workflows/scripts/free_disk_space.sh
+
+      ###########################
+      #   Restore base and hub  #
+      ###########################
+      - uses: actions/download-artifact@v2
+      - name: Restore base and hub
+        run: |
+          docker load -i artifact/base-and-hub.tar
+          rm -rf artifact
+
+      ###########################
+      #      Setup to build     #
+      ###########################
+      - name: Setup to build
+        run: |
+          # The changeset for unity version
+          echo "CHANGESET=`npx unity-changeset ${{ matrix.version }}`" >> $GITHUB_ENV
+
+          # For 2019.3 or later, non-il2cpp would also be possible to build with il2cpp image.
+          if [ `echo "${{ matrix.version }}" | grep -v '\(2018\|2019.1\|2019.2\)'` ] && [ "${{ matrix.module }}" = 'base' ] ; then
+            echo "MODULE=linux-il2cpp" >> $GITHUB_ENV
+          else
+            echo "MODULE=${{ matrix.module }}" >> $GITHUB_ENV
+          fi
+
+      ###########################
+      #       Build editor      #
+      ###########################
+      - name: Build
+        # if: steps.build-1.outcome == 'failure'
+        uses: docker/build-push-action@v2
+        id: build-1
+        continue-on-error: true
+        timeout-minutes: 40
+        with:
+          context: .
+          file: editor/Dockerfile
+          build-args: |
+            baseImage=base:dev
+            hubImage=hub:dev
+            version=${{ matrix.version }}
+            changeSet=${{ env.CHANGESET }}
+            module=${{ env.MODULE }}
+          tags: editor:dev
+
+      ###########################
+      #   Build editor (retry)  #
+      ###########################
+      - name: Sleep for retry
+        if: steps.build-1.outcome == 'failure'
+        run: sleep 120
+
+      - name: Build (Retry)
+        if: steps.build-1.outcome == 'failure'
+        uses: docker/build-push-action@v2
+        id: build-2
+        # continue-on-error: true
+        timeout-minutes: 40
+        with:
+          context: .
+          file: editor/Dockerfile
+          build-args: |
+            baseImage=base:dev
+            hubImage=hub:dev
+            version=${{ matrix.version }}
+            changeSet=${{ env.CHANGESET }}
+            module=${{ env.MODULE }}
+          tags: editor:dev
+
+      ###########################
+      #      Setup to test      #
+      ###########################
+      - name: Show image size
+        run: docker images
+      - name: Setup to test
+        run: |
+          # For 'linux-il2cpp' module, switch the script backend to 'IL2CPP'
+          if [ "${{ matrix.module }}" = "linux-il2cpp" ] ; then
+            mv -f reference-project-test/ProjectSettings/ProjectSettings_il2cpp.asset reference-project-test/ProjectSettings/ProjectSettings.asset
+          fi
+
+      ###########################
+      #          Build          #
+      ###########################
+      - name: Build project
+        uses: game-ci/unity-builder@main
+        with:
+          unityVersion: ${{ matrix.version }}
+          customImage: editor:dev
+          projectPath: reference-project-test
+          targetPlatform: ${{ matrix.platform }}
+          allowDirtyBuild: true
+
+      ###########################
+      #       Build (GZip)      #
+      ###########################
+      - name: "⚙️ Setup (GZip)"
+        if: env.MODULE == 'webgl'
+        run: |
+          # Set WebGL compression format to gzip
+          sed -i -e 's/webGLCompressionFormat: .*$/webGLCompressionFormat: 1/' reference-project-test/ProjectSettings/ProjectSettings.asset
+      - name: Build project (GZip)
+        if: env.MODULE == 'webgl'
+        uses: game-ci/unity-builder@main
+        with:
+          unityVersion: ${{ matrix.version }}
+          customImage: editor:dev
+          projectPath: reference-project-test
+          targetPlatform: ${{ matrix.platform }}
+          allowDirtyBuild: true
+
+      ###########################
+      #       Build (Brotli)      #
+      ###########################
+      - name: "⚙️ Setup (Brotli)"
+        if: env.MODULE == 'webgl'
+        run: |
+          # Set WebGL compression format to brotli
+          sed -i -e 's/webGLCompressionFormat: .*$/webGLCompressionFormat: 0/' reference-project-test/ProjectSettings/ProjectSettings.asset
+      - name: Build project (Brotli)
+        if: env.MODULE == 'webgl'
+        uses: game-ci/unity-builder@main
+        with:
+          unityVersion: ${{ matrix.version }}
+          customImage: editor:dev
+          projectPath: reference-project-test
+          targetPlatform: ${{ matrix.platform }}
+          allowDirtyBuild: true
+
+      ###########################
+      #           Test          #
+      ###########################
+      - name: Test project
+        uses: game-ci/unity-test-runner@main
+        with:
+          unityVersion: ${{ matrix.version }}
+          customImage: editor:dev
+          projectPath: reference-project-test
+          customParameters: -nographics -buildTarget ${{ matrix.platform }}
