@@ -8,7 +8,7 @@ jobs:
 
       # Checkout repository (required to test local actions)
       - name: Checkout repository
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2.3.4
 
       # Request manual activation file
       - name: Request manual activation file
