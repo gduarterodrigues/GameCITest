@@ -5,7 +5,7 @@ jobs:
     name: Request manual activation file 🔑
     runs-on: windows-latest
     steps:
-# Gets Unity License from variableas
+# Gets Unity License from variableas asd
       - name: Get_License
         uses: game-ci/unity-builder@v2
   	env:
