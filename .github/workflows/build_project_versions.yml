@@ -1,0 +1,22 @@
+name: Build Versions
+on: [push]
+jobs:
+  build:
+    name: Request manual activation file 🔑
+    runs-on: windows-latest
+    steps:
+# Gets Unity License from variable
+      - name: Get_License
+        uses: game-ci/unity-builder@v2
+  	env:
+	UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+  	with:
+   	targetPlatform: WebGL
+
+
+# Stores build
+      - name: Stores Build as Artifact
+        uses: actions/upload-artifact@v2
+	  with:
+	    name: Build
+	    path: build
