@@ -15,8 +15,8 @@ targetPlatform: WebGL
 
 
 # Stores build
-      - name: Stores Build as Artifact
-        uses: actions/upload-artifact@v2
-	  with:
-	    name: Build
-	    path: build
+- name: Stores Build as Artifact
+uses: actions/upload-artifact@v2
+with:
+name: Build
+path: build
