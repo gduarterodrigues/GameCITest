@@ -1,11 +1,11 @@
 name: Build Versions
 on: [push]
 jobs:
-  get license:
-    name: Uses license
-    runs-on: windows-latest
-    steps:
-# Gets Unity License from variable
+ get license:
+ name: Uses license
+ runs-on: windows-latest
+ steps:
+# Gets Unity License
  - name: Get_License
  - uses: game-ci/unity-builder@v2
 env:
