@@ -9,7 +9,7 @@ jobs:
       - name: Get_License
         uses: game-ci/unity-builder@v2
   	env:
-	UNITY_LICENSE: <?xml version="1.0" encoding="UTF-8"?><root>
+UNITY_LICENSE: <?xml version="1.0" encoding="UTF-8"?><root>
     <License id="Terms">
         <MachineBindings>
             <Binding Key="1" Value="576562626572264761624c65526f7578"/>
