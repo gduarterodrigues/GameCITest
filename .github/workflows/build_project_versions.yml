@@ -1,6 +1,5 @@
 name: Build Versions
 on: [push]
-
  jobs:
   get license:
    name: Uses license
