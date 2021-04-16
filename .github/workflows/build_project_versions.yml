@@ -9,46 +9,7 @@ jobs:
       - name: Get_License
         uses: game-ci/unity-builder@v2
   	env:
-UNITY_LICENSE: <?xml version="1.0" encoding="UTF-8"?><root>
-    <License id="Terms">
-        <MachineBindings>
-            <Binding Key="1" Value="576562626572264761624c65526f7578"/>
-            <Binding Key="2" Value="576562626572264761624c65526f7578"/>
-        </MachineBindings>
-        <MachineID Value="D7nTUnjNAmtsUMcnoyrqkgIbYdM="/>
-        <SerialHash Value="96efaa522b70a20e793f83f4f96b1abbb4b2aa7a"/>
-        <Features>
-            <Feature Value="33"/>
-            <Feature Value="1"/>
-            <Feature Value="12"/>
-            <Feature Value="2"/>
-            <Feature Value="24"/>
-            <Feature Value="3"/>
-            <Feature Value="36"/>
-            <Feature Value="17"/>
-            <Feature Value="19"/>
-            <Feature Value="62"/>
-        </Features>
-        <DeveloperData Value="AQAAAEY0LU5STjItQ0pRMy0yNUtXLTNXQ1ctNkpLSg=="/>
-        <SerialMasked Value="F4-NRN2-CJQ3-25KW-3WCW-XXXX"/>
-        <StartDate Value="2017-12-15T00:00:00"/>
-        <UpdateDate Value="2021-04-16T23:54:29"/>
-        <InitialActivationDate Value="2017-12-15T17:44:35"/>
-        <LicenseVersion Value="6.x"/>
-        <ClientProvidedVersion Value="2019.2.11f1"/>
-        <AlwaysOnline Value="false"/>
-        <Entitlements>
-            <Entitlement Ns="unity_editor" Tag="UnityPro" Type="EDITOR" ValidTo="2021-09-06T18:31:09"/>
-            <Entitlement Ns="unity_editor" Tag="UnityPersonal" Type="EDITOR" ValidTo="9999-12-31T00:00:00"/>
-            <Entitlement Ns="unity_editor" Tag="DarkSkin" Type="EDITOR_FEATURE" ValidTo="9999-12-31T00:00:00"/>
-            <Entitlement Ns="unity_editor" Tag="UnityProStudent" Type="EDITOR_FEATURE" ValidTo="2021-09-06T18:31:09"/>
-        </Entitlements>
-    </License>
-<Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments"/><SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/><Reference URI="#Terms"><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/></Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/><DigestValue>UiF80d5tl/XVFavRvjaKEjH+xWs=</DigestValue></Reference></SignedInfo><SignatureValue>U+Mszz89YNtr4xWMofvGBtpnEyDepkDRbf/ceKsEu9bR+TVdb6XhZObzarCpwEI8DSETcEyAgzqB
-EGALG+lxTOt9nmh3FfJp6PHkiBGt8mMjQ8SeQvrX3+zI2Qg2+VzXqYixYScqno6/dKOo4y2wG9u3
-reIWX89IB+NMk7o9RvXA03UyRwNi7bLoJAZcN/T+rI2dCvX4u7dSQgmtCRV+FWVvKoUNwyp4sMEN
-VJkRZ7ECKa5XfIm7GjV5aYhdwbmiycbRMr/XCcxMBoUUxnsYhUkx9udNMirVdihXdNFmjWciPIF6
-iMeW6d2XQQnKT2IcTIJEnC2lRiT+7o28Ox7mOw==</SignatureValue></Signature></root>
+UNITY_LICENSE: ${{secrets.UNITY_LICENSE}}
   	with:
    	targetPlatform: WebGL
 
