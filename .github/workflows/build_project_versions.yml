@@ -1,22 +1,21 @@
 name: Build Versions
 on: [push]
 
-	jobs:
-		get license:
-			name: Uses license
- 			runs-on: windows-latest
- 			steps:
-				# Gets Unity License
-			 - name: Get_License
-			 - uses: game-ci/unity-builder@v2
-			env:
-				UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-			with:
-				targetPlatform: WebGL
-
-			# Stores Build 
-			 - name: Stores Build as Artifact
-			 - uses: actions/upload-artifact@v2
-			with:
-				name: Build
-				path: build
+ jobs:
+  get license:
+   name: Uses license
+   runs-on: windows-latest
+   steps:
+    # Gets Unity License
+    - name: Get_License
+    - uses: game-ci/unity-builder@v2
+   env:
+    UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+   with:
+    targetPlatform: WebGL
+    # Stores Build 
+    - name: Stores Build as Artifact
+    - uses: actions/upload-artifact@v2
+   with:
+    name: Build
+    path: build
