@@ -12,9 +12,7 @@ env:
 UNITY_LICENSE: ${{secrets.UNITY_LICENSE}}
 with:
 targetPlatform: WebGL
-
-
-# Stores build
+# Stores Build
 - name: Stores Build as Artifact
 uses: actions/upload-artifact@v2
 with:
